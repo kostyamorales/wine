@@ -3,9 +3,13 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 import datetime
 import pandas
 import collections
+import argparse
 
-FILE_EXCEL = 'wine3.xlsx'
-SHEET_NAME_EXEL = 'Лист1'
+parser = argparse.ArgumentParser(
+    description='Программа показывает ассортимент магазина'
+)
+parser.add_argument('file_name', help='Файл с ассортиментом')
+args = parser.parse_args()
 
 
 def counts_winery_age():
@@ -18,33 +22,12 @@ def counts_winery_age():
 
 
 def deduces_assortment():
-    wine_excel = pandas.read_excel(FILE_EXCEL, sheet_name=SHEET_NAME_EXEL, na_values=str, keep_default_na=False)
+    wine_excel = pandas.read_excel(args.file_name, na_values=str, keep_default_na=False)
     wines = wine_excel.to_dict(orient='records')
     assortment = collections.defaultdict(list)
     for wine in wines:
         assortment[wine['Категория']].append(wine)
     return assortment
-
-
-def get_categories(assortment):
-    assortment_categories = []
-    for wine in assortment:
-        assortment_categories.append(wine)
-    assortment_categories = sorted(assortment_categories)
-    return assortment_categories
-
-
-def generates_store_data():
-    winery_age = counts_winery_age()
-    assortment = deduces_assortment()
-    assortment_categories = get_categories(assortment)
-    rendered_page = template.render(
-        wines=assortment,
-        winery_age=winery_age,
-        wine_categories=assortment_categories,
-        category_quantity=len(assortment_categories)
-    )
-    return rendered_page
 
 
 if __name__ == '__main__':
@@ -53,8 +36,14 @@ if __name__ == '__main__':
         autoescape=select_autoescape(['html', 'xml'])
     )
 
+    winery_age = counts_winery_age()
+    assortment = deduces_assortment()
+
     template = env.get_template('template.html')
-    rendered_page = generates_store_data()
+    rendered_page = template.render(
+        winery_age=winery_age,
+        wines=assortment
+    )
     with open('index.html', 'w', encoding="utf8") as file:
         file.write(rendered_page)
 
